@@ -1,11 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status,Request
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
-
+from app.services.audit_service import create_log
 from app.database.database import get_db
 
 from app.models.user import User
+from app.core.rate_limit import limiter
 
 from app.schemas.user import (
     UserRegister,
@@ -67,7 +68,9 @@ def register(
 # Login User
 # ==========================
 @router.post("/login")
+@limiter.limit("5/minute")
 def login(
+    request: Request,
     user: UserLogin,
     db: Session = Depends(get_db)
 ):
@@ -84,12 +87,20 @@ def login(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password"
         )
+    
+    
 
 
     access_token = create_access_token(
         {
             "sub": db_user.email
         }
+    )
+
+    create_log(
+    db_user.id,
+    "LOGIN",
+    db
     )
 
 

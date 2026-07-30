@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from app.services.audit_service import create_log
 
 from app.models.vault import Vault
 from app.schemas.vault import (
@@ -29,6 +30,14 @@ def create_password(
     db.add(vault)
     db.commit()
     db.refresh(vault)
+
+    create_log(
+    user_id,
+    "CREATE_PASSWORD",
+    db
+)
+
+
 
     return vault
 
